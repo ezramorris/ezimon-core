@@ -13,6 +13,20 @@ EziMon is a project to create an **Ezi**-to-use, extensible realtime data
   
 EziMon is in very early stages of development, so doesn't do a lot yet!
 
+## Installation and usage
+
+Requires Python 3.6 or newer.
+
+This package is not yet available on PyPI. It can be installed along with all
+dependencies either by cloning this repo locally then running from the repo
+directory:
+
+    pip install -e .
+
+Or directly from the repo:
+
+    pip install -e git+https://github.com/ezramorris/ezimon-core.git#egg=ezimon-core
+
 ## Goals
 
 EziMon Core should be:
