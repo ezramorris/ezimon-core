@@ -26,7 +26,7 @@ class TestStringBinaryProtocol(TestCase):
             p.serialise('ß')
 
     def test_serialise_invalid_ascii_character_with_replacement(self):
-        p = StringBinaryProtocol(encoding='ascii', errors='replace')
+        p = StringBinaryProtocol(encoding='ascii', encode_errors='replace')
         self.assertEqual(p.serialise('ß'), b'?')
 
     def test_deserialise_invalid_utf8_code(self):
@@ -35,5 +35,5 @@ class TestStringBinaryProtocol(TestCase):
             p.deserialise(b'\x80')
 
     def test_deserialise_invalid_utf8_code_with_replacement(self):
-        p = StringBinaryProtocol(errors='replace')
+        p = StringBinaryProtocol(decode_errors='replace')
         self.assertEqual(p.deserialise(b'\x80'), '\N{REPLACEMENT CHARACTER}')

@@ -16,23 +16,39 @@ class BaseBinaryProtocol(BaseProtocol):
 
 
 class StringBinaryProtocol(BaseBinaryProtocol):
-    """Protocol which converts from Python strings to byte strings and vice
-    versa."""
+    """Protocol which encodes Python strings to byte strings during
+    serialisation and decodes during deserialisation.
 
-    def __init__(self, **kwargs):
-        """All keyword arguments are passed to str.encode() and bytes.decode().
-        As of Python 3.9, the available arguments are `encoding` and `errors`.
-        See https://docs.python.org/3/library/stdtypes.html#str.encode and
-        https://docs.python.org/3/library/stdtypes.html#bytes.decode ."""
+    :param encoding: encoding to use when (de)serialising. See
+        https://docs.python.org/3/library/codecs.html#standard-encodings for
+        available encodings. Defaults to 'utf-8'
+    :param encode_errors: error action to perform on encoding. See
+        https://docs.python.org/3/library/codecs.html#error-handlers for
+        available error actions. Defaults to 'strict'
+    :param decode_errors: error action to perform on decoding. See
+        https://docs.python.org/3/library/codecs.html#error-handlers for
+        available error actions. Defaults to 'strict'
+    """
 
-        self._kwargs = kwargs
+    def __init__(self, encoding: str = 'utf-8', encode_errors: str = 'strict',
+                 decode_errors: str = 'strict'):
+
+        self.encoding = encoding
+        self.encode_errors = encode_errors
+        self.decode_errors = decode_errors
 
     def serialise(self, obj: str) -> bytes:
-        """Serialise the given Python string to a byte string."""
+        """Serialise the given Python string to a byte string.
 
-        return obj.encode(**self._kwargs)
+        :param obj: string to serialise
+        """
+
+        return obj.encode(encoding=self.encoding, errors=self.encode_errors)
 
     def deserialise(self, data: bytes) -> str:
-        """Deserialise the given byte string to a Python string."""
+        """Deserialise the given byte string to a Python string.
 
-        return data.decode(**self._kwargs)
+        :param data: data to deserialise
+        """
+
+        return data.decode(encoding=self.encoding, errors=self.decode_errors)
