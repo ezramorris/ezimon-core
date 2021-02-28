@@ -38,3 +38,5 @@ EziMon Core should be:
   components or major rework.
 * Tested and documented. >80% unit test coverage, integration tests for common
   use cases, all public interfaces documented, examples written.
+* Dependent on as few packages as possible. Must not depend on GUI frameworks
+  e.g. PyQt.
