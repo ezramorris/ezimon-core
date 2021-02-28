@@ -53,19 +53,31 @@ class TestStringBinaryProtocol(TestCase):
             p.process_values(('ß',))
         self.assertIsNone(p.get_next_serialised())
 
-    def test_serialise_invalid_ascii_character_with_replacement(self):
-        p = StringBinaryProtocol(encoding='ascii', encode_errors='replace')
-        p.process_values(('ß',))
-        self.assertEqual(p.get_next_serialised(), b'?')
-
     def test_deserialise_invalid_utf8_code(self):
         p = StringBinaryProtocol()
         with self.assertLogs(logger, 'ERROR'):
-            p.process_data(b'\x80')
+            p.process_data(b'a\xc3b')
+        self.assertEqual(p.get_next_deserialised(), ('a',))
+        self.assertEqual(p.get_next_deserialised(), ('b',))
+
+    def test_deserialise_ss_over_2_calls_at_start(self):
+        p = StringBinaryProtocol()
+
+        # Process an 'a' and first byte of 'ß'.
+        p.process_data(b'\xc3')
         self.assertIsNone(p.get_next_deserialised())
 
-    def test_deserialise_invalid_utf8_code_with_replacement(self):
-        p = StringBinaryProtocol(decode_errors='replace')
-        p.process_data(b'\x80')
-        self.assertEqual(p.get_next_deserialised(),
-                         ('\N{REPLACEMENT CHARACTER}',))
+        # Process second half of 'ß' and 'b'.
+        p.process_data(b'\x9fb')
+        self.assertEqual(p.get_next_deserialised(), ('ßb',))
+
+    def test_deserialise_ss_over_2_calls_in_middle(self):
+        p = StringBinaryProtocol()
+
+        # Process an 'a' and first byte of 'ß'.
+        p.process_data(b'a\xc3')
+        self.assertEqual(p.get_next_deserialised(), ('a',))
+
+        # Process second half of 'ß' and 'b'.
+        p.process_data(b'\x9fb')
+        self.assertEqual(p.get_next_deserialised(), ('ßb',))

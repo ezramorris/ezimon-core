@@ -81,29 +81,46 @@ class StringBinaryProtocol(BaseBinaryProtocol):
     :param encoding: encoding to use when (de)serialising. See
         https://docs.python.org/3/library/codecs.html#standard-encodings for
         available encodings. Defaults to 'utf-8'
-    :param encode_errors: error action to perform on encoding
-    :param decode_errors: error action to perform on decoding
-
-    See https://docs.python.org/3/library/codecs.html#error-handlers for
-    available error actions. If set to 'strict' (the default), will simply
-    log an error and fail to (de)serialise rather than raising a
-    UnicodeError.
     """
 
-    def __init__(self, encoding: str = 'utf-8', encode_errors: str = 'strict',
-                 decode_errors: str = 'strict'):
+    def __init__(self, encoding: str = 'utf-8'):
 
         super().__init__()
 
         self.encoding = encoding
-        self.encode_errors = encode_errors
-        self.decode_errors = decode_errors
+
+        # Stores data which needs to be processed along with the next data.
+        self._pending_data = None
 
     def process_data(self, data: bytes):
+        # Ignore empty data.
+        if not data:
+            return
+
+        # Append any pending data.
+        if self._pending_data is not None:
+            data = self._pending_data + data
+            self._pending_data = None
+
         try:
-            s = data.decode(encoding=self.encoding, errors=self.decode_errors)
-        except UnicodeError as e:
-            logger.error('failed to decode %s: %s', data, str(e))
+            s = data.decode(encoding=self.encoding, errors='strict')
+        except UnicodeDecodeError as e:
+            assert e.object == data
+
+            # Process any data before the start of the error.
+            self.process_data(data[:e.start])
+
+            # If the error occurred at the end of the data, it could be that
+            # more data still needs to arrive to decode, so set it to pending.
+            if e.end == len(data):
+                self._pending_data = data[e.start:e.end]
+
+            # Otherwise, log an error for the part which specifically caused an
+            # error, and try and process data after.
+            else:
+                logger.error('failed to decode %s: %s',
+                             data[e.start:e.end], str(e))
+                self.process_data(data[e.end:])
         else:
             self.submit_deserialised((s,))
 
@@ -113,7 +130,7 @@ class StringBinaryProtocol(BaseBinaryProtocol):
 
         s = values[0]
         try:
-            b = s.encode(encoding=self.encoding, errors=self.encode_errors)
+            b = s.encode(encoding=self.encoding, errors='strict')
         except UnicodeError as e:
             logger.error('failed to encode %s: %s', s, str(e))
         else:
